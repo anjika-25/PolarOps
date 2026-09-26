@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: polarops_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: polaradmin
+      POSTGRES_PASSWORD: polarpassword
+      POSTGRES_DB: polarops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: polarops_backend
+    restart: always
+    environment:
+      POSTGRES_USER: polaradmin
+      POSTGRES_PASSWORD: polarpassword
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: polarops
+      DATABASE_URL: postgresql://polaradmin:polarpassword@postgres:5432/polarops
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: polarops_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
