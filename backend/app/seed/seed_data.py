@@ -34,9 +34,11 @@ from app.models.inventory_usage import InventoryUsageHistory
 from app.models.asset import Asset
 from app.models.emergency import EmergencyIncident
 
+from app.core.security import get_password_hash
+
 def hash_password(password: str) -> str:
-    # Pre-computed bcrypt hash for 'polarops2026'
-    return "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW"
+    return get_password_hash(password)
+
 
 
 def seed_database():

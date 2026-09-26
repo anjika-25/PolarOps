@@ -1,15 +1,29 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.routes.auth import router as auth_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Operational Platform API for Indian Polar Expeditions (MoES / NCPOR)",
     version="1.0.0"
 )
+
+# Enable CORS for frontend client
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include Auth Router
+app.include_router(auth_router)
 
 @app.get("/")
 def read_root():
@@ -22,10 +36,9 @@ def read_root():
 @app.get("/api/health")
 def db_health_check(db: Session = Depends(get_db)):
     """
-    Verifies FastAPI connectivity to the PostgreSQL database by executing a lightweight ping query.
+    Verifies FastAPI connectivity to PostgreSQL.
     """
     try:
-        # Execute test query against PostgreSQL database
         result = db.execute(text("SELECT 1")).scalar()
         if result == 1:
             return {
@@ -38,7 +51,7 @@ def db_health_check(db: Session = Depends(get_db)):
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database query returned unexpected result"
+                detail="Database ping returned unexpected result"
             )
     except Exception as e:
         raise HTTPException(
