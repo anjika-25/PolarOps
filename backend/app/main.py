@@ -7,6 +7,11 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.routes.auth import router as auth_router
 from app.routes.dashboard import router as dashboard_router
+from app.routes.personnel import router as personnel_router
+from app.routes.logistics import router as cargo_router
+from app.routes.inventory import router as inventory_router
+from app.routes.assets import router as assets_router
+from app.routes.emergency import router as emergency_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -26,6 +31,11 @@ app.add_middleware(
 # Include Routers
 app.include_router(auth_router)
 app.include_router(dashboard_router)
+app.include_router(personnel_router)
+app.include_router(cargo_router)
+app.include_router(inventory_router)
+app.include_router(assets_router)
+app.include_router(emergency_router)
 
 @app.get("/")
 def read_root():
