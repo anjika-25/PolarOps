@@ -6,6 +6,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.database import get_db
 from app.routes.auth import router as auth_router
+from app.routes.dashboard import router as dashboard_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -22,8 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Auth Router
+# Include Routers
 app.include_router(auth_router)
+app.include_router(dashboard_router)
 
 @app.get("/")
 def read_root():
