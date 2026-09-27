@@ -1,7 +1,18 @@
 import React from 'react';
-import { Filter, RotateCcw, Package, MapPin, Edit3, AlertCircle } from 'lucide-react';
+import { Filter, RotateCcw, Package, MapPin, Edit3, AlertCircle, TrendingDown } from 'lucide-react';
 
-const InventoryTable = ({ inventory = [], filters, onFilterChange, onResetFilters, onEditClick, loading, error, onRetry }) => {
+const InventoryTable = ({
+  inventory = [],
+  filters,
+  onFilterChange,
+  onResetFilters,
+  onEditClick,
+  onSelectPredictionItem,
+  selectedPredictionItemId,
+  loading,
+  error,
+  onRetry
+}) => {
   const locations = [
     "Maitri Station",
     "Bharati Station",
@@ -120,53 +131,81 @@ const InventoryTable = ({ inventory = [], filters, onFilterChange, onResetFilter
                     </td>
                   </tr>
                 ) : (
-                  inventory.map((item) => (
-                    <tr key={item.item_id} className="hover:bg-slate-50/80 transition-colors">
-                      {/* 1. Item */}
-                      <td className="py-3.5 px-4 text-polar-text">
-                        <div className="font-bold text-slate-900">{item.item_name}</div>
-                        <div className="text-[11px] text-polar-textMuted font-normal">
-                          Category: {item.category}
-                        </div>
-                      </td>
+                  inventory.map((item) => {
+                    const isSelectedPrediction = Number(selectedPredictionItemId) === item.item_id;
 
-                      {/* 2. Location */}
-                      <td className="py-3.5 px-4 text-polar-textMuted">
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{item.location}</span>
-                        </div>
-                      </td>
+                    return (
+                      <tr
+                        key={item.item_id}
+                        className={`transition-colors ${
+                          isSelectedPrediction
+                            ? 'bg-blue-50/70 font-semibold'
+                            : 'hover:bg-slate-50/80'
+                        }`}
+                      >
+                        {/* 1. Item */}
+                        <td className="py-3.5 px-4 text-polar-text">
+                          <div className="font-bold text-slate-900">{item.item_name}</div>
+                          <div className="text-[11px] text-polar-textMuted font-normal">
+                            Category: {item.category}
+                          </div>
+                        </td>
 
-                      {/* 3. Current Stock */}
-                      <td className="py-3.5 px-4 text-right font-bold text-polar-text">
-                        {item.quantity.toLocaleString()} {item.unit}
-                      </td>
+                        {/* 2. Location */}
+                        <td className="py-3.5 px-4 text-polar-textMuted">
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{item.location}</span>
+                          </div>
+                        </td>
 
-                      {/* 4. Minimum Required */}
-                      <td className="py-3.5 px-4 text-right text-polar-textMuted">
-                        {item.minimum_threshold.toLocaleString()} {item.unit}
-                      </td>
+                        {/* 3. Current Stock */}
+                        <td className="py-3.5 px-4 text-right font-bold text-polar-text">
+                          {item.quantity.toLocaleString()} {item.unit}
+                        </td>
 
-                      {/* 5. Status */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${getStatusBadge(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </td>
+                        {/* 4. Minimum Required */}
+                        <td className="py-3.5 px-4 text-right text-polar-textMuted">
+                          {item.minimum_threshold.toLocaleString()} {item.unit}
+                        </td>
 
-                      {/* Action: Edit Stock Quantity */}
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={() => onEditClick(item)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-[#2F6F95] hover:text-white text-slate-700 font-semibold text-[11px] border border-slate-200 transition-colors shadow-2xs"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Edit Stock</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        {/* 5. Status */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${getStatusBadge(item.status)}`}>
+                            {item.status}
+                          </span>
+                        </td>
+
+                        {/* Action Buttons: View Prediction & Edit Stock */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {onSelectPredictionItem && (
+                              <button
+                                onClick={() => onSelectPredictionItem(item.item_id)}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded font-semibold text-[11px] border transition-colors shadow-2xs ${
+                                  isSelectedPrediction
+                                    ? 'bg-[#2F6F95] text-white border-[#2F6F95]'
+                                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                                }`}
+                                title="View 7-day usage prediction"
+                              >
+                                <TrendingDown className="w-3 h-3" />
+                                <span>Prediction</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => onEditClick(item)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 hover:bg-[#2F6F95] hover:text-white text-slate-700 font-semibold text-[11px] border border-slate-200 transition-colors shadow-2xs"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              <span>Edit Stock</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

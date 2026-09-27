@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { logisticsService } from '../services/logisticsService';
+import { dashboardService } from '../services/dashboardService';
 import CargoTable from '../components/logistics/CargoTable';
 import InventoryTable from '../components/logistics/InventoryTable';
 import InventoryEditModal from '../components/logistics/InventoryEditModal';
+import LowStockAlertBanner from '../components/logistics/LowStockAlertBanner';
+import InventoryPredictionPanel from '../components/logistics/InventoryPredictionPanel';
 import { Package, CheckCircle2, RefreshCw } from 'lucide-react';
 
 const Logistics = () => {
   const [activeTab, setActiveTab] = useState('cargo'); // 'cargo' | 'inventory'
+
+  // Ref for auto-scrolling to prediction panel
+  const predictionPanelRef = useRef(null);
 
   // Cargo state
   const [cargo, setCargo] = useState([]);
@@ -19,6 +25,15 @@ const Logistics = () => {
   const [inventoryFilters, setInventoryFilters] = useState({ location: '', status: '' });
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const [inventoryError, setInventoryError] = useState(null);
+
+  // Prediction state
+  const [selectedPredictionItemId, setSelectedPredictionItemId] = useState(null);
+  const [predictionData, setPredictionData] = useState(null);
+  const [predictionLoading, setPredictionLoading] = useState(false);
+  const [predictionError, setPredictionError] = useState(null);
+
+  // Dashboard alerts state for real-time low-stock alerts
+  const [dashboardAlerts, setDashboardAlerts] = useState([]);
 
   // Edit Modal & Notification Feedback state
   const [editingItem, setEditingItem] = useState(null);
@@ -48,6 +63,14 @@ const Logistics = () => {
     try {
       const data = await logisticsService.getInventory(inventoryFilters);
       setInventory(data);
+
+      // Auto-select Item #29 (Jet A-1 Fuel) if prediction item is not yet selected
+      if (!selectedPredictionItemId && data && data.length > 0) {
+        const defaultItem = data.find((i) => i.item_id === 29) || data[0];
+        if (defaultItem) {
+          setSelectedPredictionItemId(defaultItem.item_id);
+        }
+      }
     } catch (err) {
       console.error("Inventory API Error:", err);
       const msg = err.response?.data?.detail || err.message || "Failed to load inventory stock.";
@@ -56,6 +79,42 @@ const Logistics = () => {
       setInventoryLoading(false);
     }
   };
+
+  // Fetch Prediction for selected item
+  const fetchPrediction = async (itemId) => {
+    if (!itemId) {
+      setPredictionData(null);
+      return;
+    }
+    setPredictionLoading(true);
+    setPredictionError(null);
+    try {
+      const data = await logisticsService.getInventoryPrediction(itemId);
+      setPredictionData(data);
+    } catch (err) {
+      console.error("Prediction API Error:", err);
+      const msg = err.response?.data?.detail || err.message || "Failed to load depletion prediction.";
+      setPredictionError(msg);
+    } finally {
+      setPredictionLoading(false);
+    }
+  };
+
+  // Fetch Dashboard Alerts & Stats for real-time sync
+  const fetchDashboardAlerts = async () => {
+    try {
+      const alerts = await dashboardService.getAlerts();
+      setDashboardAlerts(alerts);
+      await dashboardService.getStats();
+    } catch (err) {
+      console.error("Failed to fetch dashboard alerts for logistics:", err);
+    }
+  };
+
+  // Initial mount fetch to ensure count initializes cleanly without temporary 0
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'cargo') {
@@ -66,8 +125,15 @@ const Logistics = () => {
   useEffect(() => {
     if (activeTab === 'inventory') {
       fetchInventory();
+      fetchDashboardAlerts();
     }
   }, [inventoryFilters, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'inventory' && selectedPredictionItemId) {
+      fetchPrediction(selectedPredictionItemId);
+    }
+  }, [selectedPredictionItemId, activeTab]);
 
   // Cargo Filters Handlers
   const handleCargoFilterChange = (key, value) => {
@@ -85,6 +151,15 @@ const Logistics = () => {
     setInventoryFilters({ location: '', status: '' });
   };
 
+  // Select Item for Prediction & Smooth Auto-Scroll to Prediction Graph
+  const handleSelectPredictionItem = (itemId) => {
+    const id = Number(itemId);
+    setSelectedPredictionItemId(id);
+    setTimeout(() => {
+      predictionPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   // Inventory Edit Action
   const handleOpenEditModal = (item) => {
     setEditingItem(item);
@@ -92,19 +167,38 @@ const Logistics = () => {
   };
 
   const handleSaveInventoryQuantity = async (itemId, newQuantity) => {
+    // 1. Call PATCH /api/inventory/{item_id}
     const updatedRecord = await logisticsService.updateInventoryQuantity(itemId, newQuantity);
-    
-    // Update local state and refetch
+
+    // 2. Update local inventory state immediately
     setInventory((prev) =>
       prev.map((item) => (item.item_id === itemId ? updatedRecord : item))
     );
 
-    // Show temporary feedback banner
-    setFeedbackMessage(`Updated ${updatedRecord.item_name} stock quantity to ${updatedRecord.quantity} ${updatedRecord.unit} (Status: ${updatedRecord.status})`);
+    // 3. Show feedback banner
+    setFeedbackMessage(
+      `Updated ${updatedRecord.item_name} stock quantity to ${updatedRecord.quantity} ${updatedRecord.unit} (Status: ${updatedRecord.status})`
+    );
     setTimeout(() => setFeedbackMessage(null), 5000);
 
-    // Refetch to ensure sync with PostgreSQL
-    fetchInventory();
+    // 4. Refetch inventory, dashboard alerts, and prediction if the edited item is currently selected
+    await Promise.all([
+      fetchInventory(),
+      fetchDashboardAlerts(),
+      selectedPredictionItemId === itemId ? fetchPrediction(itemId) : Promise.resolve()
+    ]);
+  };
+
+  const handleRefreshAll = () => {
+    if (activeTab === 'cargo') {
+      fetchCargo();
+    } else {
+      fetchInventory();
+      fetchDashboardAlerts();
+      if (selectedPredictionItemId) {
+        fetchPrediction(selectedPredictionItemId);
+      }
+    }
   };
 
   return (
@@ -122,7 +216,7 @@ const Logistics = () => {
         </div>
 
         <button
-          onClick={activeTab === 'cargo' ? fetchCargo : fetchInventory}
+          onClick={handleRefreshAll}
           className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded bg-white hover:bg-slate-50 text-polar-text border border-polar-border shadow-sm transition-colors"
           title="Refresh Module Data"
         >
@@ -149,7 +243,7 @@ const Logistics = () => {
               : 'border-transparent text-polar-textMuted hover:text-polar-text hover:bg-slate-100/60'
           }`}
         >
-          Cargo Transits ({cargo.length})
+          Cargo Transits ({cargoLoading && cargo.length === 0 ? '...' : cargo.length})
         </button>
         <button
           onClick={() => setActiveTab('inventory')}
@@ -159,7 +253,7 @@ const Logistics = () => {
               : 'border-transparent text-polar-textMuted hover:text-polar-text hover:bg-slate-100/60'
           }`}
         >
-          Station Inventory ({inventory.length})
+          Station Inventory ({inventoryLoading && inventory.length === 0 ? '...' : inventory.length})
         </button>
       </div>
 
@@ -175,16 +269,37 @@ const Logistics = () => {
           onRetry={fetchCargo}
         />
       ) : (
-        <InventoryTable
-          inventory={inventory}
-          filters={inventoryFilters}
-          onFilterChange={handleInventoryFilterChange}
-          onResetFilters={handleResetInventoryFilters}
-          onEditClick={handleOpenEditModal}
-          loading={inventoryLoading}
-          error={inventoryError}
-          onRetry={fetchInventory}
-        />
+        <div className="space-y-6">
+          {/* Active Low-Stock Alert Banner (from actual GET /api/dashboard/alerts) */}
+          <LowStockAlertBanner alerts={dashboardAlerts} />
+
+          {/* Section 1: Depletion Prediction Panel with Auto-Scroll Ref Anchor */}
+          <div ref={predictionPanelRef} className="scroll-mt-4">
+            <InventoryPredictionPanel
+              inventoryItems={inventory}
+              selectedItemId={selectedPredictionItemId}
+              onSelectItem={handleSelectPredictionItem}
+              predictionData={predictionData}
+              loading={predictionLoading}
+              error={predictionError}
+              onRetry={() => fetchPrediction(selectedPredictionItemId)}
+            />
+          </div>
+
+          {/* Section 2: Inventory Stock Table */}
+          <InventoryTable
+            inventory={inventory}
+            filters={inventoryFilters}
+            onFilterChange={handleInventoryFilterChange}
+            onResetFilters={handleResetInventoryFilters}
+            onEditClick={handleOpenEditModal}
+            onSelectPredictionItem={handleSelectPredictionItem}
+            selectedPredictionItemId={selectedPredictionItemId}
+            loading={inventoryLoading}
+            error={inventoryError}
+            onRetry={fetchInventory}
+          />
+        </div>
       )}
 
       {/* Inventory Edit Modal */}

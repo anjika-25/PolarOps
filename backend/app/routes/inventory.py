@@ -4,16 +4,24 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from app.core.database import get_db
-from app.routes.auth import get_current_user
+from app.routes.auth import get_current_user, require_roles
 from app.models.user import User
 from app.models.inventory import Inventory
 from app.schemas.logistics import InventoryResponse, InventoryUpdate
+from app.schemas.inventory_usage import InventoryPredictionResponse
+from app.services.alert_service import evaluate_inventory_item
+from app.services.prediction_service import calculate_inventory_prediction
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
 
 def derive_inventory_status(quantity: float, minimum_threshold: float) -> str:
-    """Derives display status dynamically from current stock and minimum threshold."""
-    if float(quantity) <= float(minimum_threshold):
+    """
+    Derives display status dynamically from current stock and minimum threshold:
+    - 'Low' when quantity < minimum_threshold
+    - 'Normal' when quantity >= minimum_threshold
+    Strictly uses < (not <=).
+    """
+    if float(quantity) < float(minimum_threshold):
         return "Low"
     return "Normal"
 
@@ -84,16 +92,36 @@ def get_inventory_by_id(
         )
     return map_inventory_to_response(item)
 
+@router.get("/{item_id}/prediction", response_model=InventoryPredictionResponse)
+def get_inventory_prediction(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculates 7-day average daily usage and estimated days remaining for a specified inventory item.
+    Returns 404 if the item ID does not exist.
+    Requires authentication.
+    """
+    prediction = calculate_inventory_prediction(db, item_id)
+    if not prediction:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Inventory item with ID {item_id} not found"
+        )
+    return prediction
+
 @router.patch("/{item_id}", response_model=InventoryResponse)
 def update_inventory_quantity(
     item_id: int,
     update_data: InventoryUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles(["ADMIN", "EXPEDITION_MANAGER"], "Only Expedition Managers and Admins can update inventory.")),
     db: Session = Depends(get_db)
 ):
     """
     Updates the quantity of an existing inventory record in PostgreSQL.
     Validates item existence and non-negative quantity.
+    Evaluates low-stock alert status via alert_service.
     Returns 404 if the item ID does not exist.
     Requires authentication.
     """
@@ -104,9 +132,18 @@ def update_inventory_quantity(
             detail=f"Inventory item with ID {item_id} not found"
         )
 
+    if update_data.quantity < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Quantity cannot be negative"
+        )
+
     # Update quantity and timestamp
     item.quantity = update_data.quantity
     item.updated_at = datetime.now(timezone.utc)
+
+    # Evaluate low-stock alert state via alert service
+    evaluate_inventory_item(db, item)
 
     db.commit()
     db.refresh(item)

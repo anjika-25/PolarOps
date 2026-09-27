@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { LogOut, User as UserIcon, Shield, Compass } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
+import polaropsEmblem from '../../assets/polarops-emblem.png';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -14,21 +15,15 @@ const Header = () => {
     <header className="h-16 bg-[#0B1F33] border-b border-slate-800 px-6 flex items-center justify-between text-white shrink-0 shadow-sm select-none">
       {/* Brand & System Identifier */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-[#2F6F95] rounded-md shadow-sm">
-          <Compass className="w-5 h-5 text-white" />
-        </div>
+        <img
+          src={polaropsEmblem}
+          alt="PolarOps Emblem"
+          className="w-9 h-9 object-contain rounded-full shadow-sm"
+        />
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-bold tracking-tight uppercase text-white leading-none">
-              PolarOps Command Center
-            </h1>
-            <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase bg-slate-800 text-slate-300 rounded border border-slate-700">
-              SIH 2026
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">
-            Ministry of Earth Sciences (MoES) / NCPOR
-          </p>
+          <h1 className="text-sm font-bold tracking-tight uppercase text-white leading-none">
+            PolarOps Command Center
+          </h1>
         </div>
       </div>
 

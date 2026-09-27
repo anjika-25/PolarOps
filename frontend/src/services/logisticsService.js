@@ -33,5 +33,10 @@ export const logisticsService = {
   updateInventoryQuantity: async (itemId, quantity) => {
     const response = await api.patch(`/inventory/${itemId}`, { quantity: Number(quantity) });
     return response.data;
+  },
+
+  getInventoryPrediction: async (itemId) => {
+    const response = await api.get(`/inventory/${itemId}/prediction`);
+    return response.data;
   }
 };

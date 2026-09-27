@@ -8,7 +8,6 @@ from app.models.user import User
 from app.models.expedition import Expedition
 from app.models.personnel import Personnel
 from app.models.cargo import Cargo
-from app.models.inventory import Inventory
 from app.models.asset import Asset
 from app.models.emergency import EmergencyIncident
 
@@ -18,6 +17,8 @@ from app.schemas.dashboard import (
     AlertItem,
     DashboardSummaryResponse
 )
+
+from app.services.alert_service import get_active_low_stock_alerts
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
@@ -37,7 +38,7 @@ def calculate_kpis(db: Session) -> KPICardData:
     # 3. Total Cargo Count
     total_cargo_count = db.query(Cargo).count()
 
-    # 4. Active Alerts Count
+    # 4. Active Alerts Count (includes low-stock alerts via alert_service)
     alerts = derive_active_alerts(db)
     active_alerts_count = len(alerts)
 
@@ -51,13 +52,12 @@ def calculate_kpis(db: Session) -> KPICardData:
 def derive_active_alerts(db: Session) -> List[AlertItem]:
     """
     Derives real-time operational alerts from database records across
-    asset maintenance, personnel status, cargo transit, and emergency incidents.
-    (Low-stock alert automation omitted until smart automation phase).
+    asset maintenance, active low-stock inventory, personnel status,
+    cargo transit, and emergency incidents.
     """
     alerts: List[AlertItem] = []
 
     # 1. Overdue & Due Maintenance Asset Alerts
-
     overdue_assets = db.query(Asset).filter(
         Asset.status.in_(["Overdue", "Maintenance Due Soon"])
     ).all()
@@ -70,6 +70,10 @@ def derive_active_alerts(db: Session) -> List[AlertItem]:
             severity="CRITICAL" if asset.status == "Overdue" else "WARNING",
             location=asset.current_location
         ))
+
+    # 2. Low-Stock Inventory Alerts (delegated to alert_service)
+    low_stock_alerts = get_active_low_stock_alerts(db)
+    alerts.extend(low_stock_alerts)
 
     # 3. Unreachable Personnel Alerts
     unreachable_personnel = db.query(Personnel).filter(
@@ -101,7 +105,7 @@ def derive_active_alerts(db: Session) -> List[AlertItem]:
 
     # 5. Active Emergency Incidents
     active_incidents = db.query(EmergencyIncident).filter(
-        EmergencyIncident.status == "Active"
+        EmergencyIncident.status.ilike("ACTIVE")
     ).all()
     for inc in active_incidents:
         alerts.append(AlertItem(

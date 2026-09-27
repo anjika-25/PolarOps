@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.routes.auth import get_current_user
+from app.routes.auth import get_current_user, require_roles
 from app.models.user import User
 from app.models.emergency import EmergencyIncident
 from app.schemas.emergency import EmergencyCreate, EmergencyResponse
@@ -18,7 +18,7 @@ ALLOWED_SEVERITIES = {"Critical", "High", "Medium"}
 def create_emergency_incident(
     payload: EmergencyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_roles(["ADMIN", "EMERGENCY_COORDINATOR"], "Only Emergency Coordinators and Admins can declare an emergency."))
 ):
     """
     Creates and persists a new Emergency Incident in PostgreSQL.

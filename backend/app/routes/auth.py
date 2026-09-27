@@ -39,6 +39,22 @@ def get_current_user(
     
     return user
 
+def require_roles(allowed_roles: list[str], custom_detail: str | None = None):
+    """
+    Reusable FastAPI dependency to enforce Role-Based Access Control (RBAC).
+    Checks whether current_user.role is in allowed_roles.
+    Raises HTTP 403 Forbidden with custom_detail if unauthorized.
+    """
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            detail = custom_detail or f"Role '{current_user.role}' is not authorized to perform this action."
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=detail
+            )
+        return current_user
+    return role_checker
+
 @router.post("/login", response_model=TokenResponse)
 def login(login_req: LoginRequest, db: Session = Depends(get_db)):
     # 1. Look up user by email

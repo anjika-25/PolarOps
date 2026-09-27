@@ -4,12 +4,16 @@ import DeclareEmergencyModal from '../components/emergency/DeclareEmergencyModal
 import ActiveIncidentCard from '../components/emergency/ActiveIncidentCard';
 import RecentIncidentsList from '../components/emergency/RecentIncidentsList';
 import { AlertTriangle, RefreshCw, AlertCircle, ShieldAlert, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const Emergency = () => {
   const [incidents, setIncidents] = useState([]);
   const [activeIncident, setActiveIncident] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { user } = useAuth();
+  const canDeclareEmergency = user && ['ADMIN', 'EMERGENCY_COORDINATOR'].includes(user.role);
 
   // Modal & submission state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,13 +115,19 @@ const Emergency = () => {
             <span>Refresh</span>
           </button>
 
-          <button
-            onClick={handleOpenModal}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 text-xs font-bold px-4 py-2 rounded bg-rose-700 hover:bg-rose-800 text-white shadow-sm transition-colors"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Declare Emergency</span>
-          </button>
+          {canDeclareEmergency ? (
+            <button
+              onClick={handleOpenModal}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 text-xs font-bold px-4 py-2 rounded bg-rose-700 hover:bg-rose-800 text-white shadow-sm transition-colors"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Declare Emergency</span>
+            </button>
+          ) : (
+            <div className="text-[11px] text-amber-800 font-semibold px-3 py-1.5 bg-amber-50 border border-amber-200 rounded">
+              Only Emergency Coordinators and Admins can declare an emergency.
+            </div>
+          )}
         </div>
       </div>
 
@@ -177,13 +187,19 @@ const Emergency = () => {
                 There are currently no active emergency incidents reported across Maitri, Bharati, Himadri, or active field camps. All stations are operating under normal conditions.
               </p>
             </div>
-            <button
-              onClick={handleOpenModal}
-              className="mt-2 inline-flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded bg-rose-700 hover:bg-rose-800 text-white shadow-sm transition-colors"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              <span>Declare Emergency</span>
-            </button>
+            {canDeclareEmergency ? (
+              <button
+                onClick={handleOpenModal}
+                className="mt-2 inline-flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded bg-rose-700 hover:bg-rose-800 text-white shadow-sm transition-colors"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span>Declare Emergency</span>
+              </button>
+            ) : (
+              <div className="mt-2 text-xs text-amber-800 font-semibold px-4 py-2 bg-amber-50 border border-amber-200 rounded text-center">
+                Only Emergency Coordinators and Admins can declare an emergency.
+              </div>
+            )}
           </div>
         </div>
       ) : (

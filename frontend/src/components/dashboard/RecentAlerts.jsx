@@ -41,8 +41,8 @@ const RecentAlerts = ({ alerts = [] }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-polar-border shadow-sm flex flex-col h-full overflow-hidden">
-      <div className="px-5 py-4 border-b border-polar-border flex items-center justify-between bg-slate-50/50">
+    <div className="bg-white rounded-lg border border-polar-border shadow-sm flex flex-col h-[480px] overflow-hidden">
+      <div className="px-5 py-4 border-b border-polar-border flex items-center justify-between bg-slate-50/50 shrink-0">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600" />
           <h3 className="text-sm font-bold text-polar-text uppercase tracking-wider">
@@ -54,7 +54,7 @@ const RecentAlerts = ({ alerts = [] }) => {
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto divide-y divide-polar-border max-h-[520px]">
+      <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-polar-border">
         {alerts.length === 0 ? (
           <div className="p-8 text-center text-polar-textMuted text-xs font-medium">
             No active operational alerts detected.

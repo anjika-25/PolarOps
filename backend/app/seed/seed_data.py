@@ -536,6 +536,34 @@ def seed_database():
                     )
                 )
 
+        # Seed usage history for 8 additional inventory items (Total 10 items)
+        additional_usage_configs = [
+            ("Propane Heating Gas Cylinders", "Maitri Station", [0.25, 0.22, 0.28, 0.24, 0.26, 0.25, 0.25]),
+            ("Freeze-Dried Ration Packs", "Maitri Station", [45.0, 42.0, 48.0, 44.0, 46.0, 45.0, 45.0]),
+            ("Station Diesel Fuel", "Himadri Station", [100.0, 98.0, 102.0, 99.0, 101.0, 100.0, 100.0]),
+            ("Synthetic Engine Oil (5W-40)", "Maitri Station", [5.0, 4.8, 5.2, 5.1, 4.9, 5.0, 5.0]),
+            ("Hydraulic Fluid ISO VG 32", "Bharati Station", [10.0, 9.5, 10.5, 10.2, 9.8, 10.0, 10.0]),
+            ("Chemical Ice Melting Granules", "Himadri Station", [25.0, 24.0, 26.0, 25.0, 25.5, 24.5, 25.0]),
+            ("Field Rations Pack - Vegetarian", "Bharati Station", [30.0, 28.0, 32.0, 29.0, 31.0, 30.0, 30.0]),
+            ("High-Energy Protein Bars", "Maitri Station", [60.0, 58.0, 62.0, 59.0, 61.0, 60.0, 60.0]),
+        ]
+
+        for item_name, loc, usages in additional_usage_configs:
+            item_record = db.query(Inventory).filter(
+                Inventory.item_name == item_name,
+                Inventory.location == loc
+            ).first()
+            if item_record:
+                for i, qty_used in enumerate(usages):
+                    usage_date = today - timedelta(days=7 - i)
+                    usage_history_objects.append(
+                        InventoryUsageHistory(
+                            item_id=item_record.item_id,
+                            date=usage_date,
+                            quantity_used=qty_used
+                        )
+                    )
+
         db.add_all(usage_history_objects)
         db.commit()
 
