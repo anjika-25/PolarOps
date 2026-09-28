@@ -258,7 +258,7 @@ const InventoryPredictionPanel = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-polar-text uppercase tracking-wider pb-2 border-b border-polar-border">
                 <Calendar className="w-4 h-4 text-polar-primary" />
-                <span>Usage Log ({predictionData.usage_history.length} Days)</span>
+                <span>Usage Log ({predictionData.usage_history?.length || 0} Days)</span>
               </div>
 
               <div className="overflow-x-auto border border-polar-border rounded">
@@ -270,7 +270,7 @@ const InventoryPredictionPanel = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-polar-border font-medium">
-                    {predictionData.usage_history.length === 0 ? (
+                    {!predictionData.usage_history || predictionData.usage_history.length === 0 ? (
                       <tr>
                         <td colSpan={2} className="py-6 text-center text-slate-400">
                           No history records.
@@ -283,7 +283,7 @@ const InventoryPredictionPanel = ({
                             {record.date}
                           </td>
                           <td className="py-2 px-3 text-right font-bold text-polar-primary">
-                            {record.quantity_used.toLocaleString()} {predictionData.unit}
+                            {record.quantity_used?.toLocaleString() || 0} {predictionData.unit}
                           </td>
                         </tr>
                       ))
@@ -292,6 +292,7 @@ const InventoryPredictionPanel = ({
                 </table>
               </div>
             </div>
+
           </div>
         </div>
       ) : null}

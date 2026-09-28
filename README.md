@@ -4,7 +4,7 @@ A centralized operational platform for Indian polar expeditions — connecting p
 
 Built for **Smart India Hackathon 2026** — Problem Statement **26062**: *Integrated Polar Expedition Logistics and Asset Management System* (Ministry of Earth Sciences / NCPOR, Category: Software, Theme: Smart Automation).
 
-> **Note:** This is a finals-selection prototype, not a production system. It uses realistic **synthetic data** to demonstrate the architecture and core automation features — it does not connect to real NCPOR operational data or hardware.
+> **Note:** This is not a production system. It uses realistic **synthetic data** to demonstrate the architecture and core automation features — it does not connect to real NCPOR operational data or hardware.
 
 ---
 
@@ -56,7 +56,8 @@ Login → Dashboard → Personnel → Cargo & Inventory
 - **Automatic low-stock alerts** — Triggers the moment stock drops below its threshold, auto-clears on restock, updates the dashboard alert count without a full page reload
 - **Fuel/inventory depletion prediction** — Simple, explainable formula (`(current stock − minimum) ÷ average daily usage`), backed by a real stored usage-history table — not machine learning
 - **Asset management** — Automatic maintenance-status classification (Overdue / Due Soon / Normal), side-panel details
-- **Emergency response** — Declare an incident, then view affected personnel and nearest available resources (vehicle, medical kit, officer), with distances calculated via the Haversine formula on stored coordinates
+- **Emergency response** — Declare an incident, then view affected personnel and nearest available resources (vehicle, medical kit, officer), with distances calculated via the Haversine formula on stored coordinates. "Mark as Resolved" (Admin/Emergency Coordinator only) closes an incident, returns the screen to its empty state, and immediately reflects the resolved incident in the Recent Emergency Log History.
+- **Operational map** — Interactive legend; clicking a station/camp flies the map to that location and opens its label. Renders 5 locations (Maitri, Bharati, Field Camp A, Field Camp B, Himadri).
 - **Audit logging**
 
 ### Future scope (not implemented in this prototype)
@@ -82,26 +83,28 @@ Login → Dashboard → Personnel → Cargo & Inventory
 
 ```bash
 git clone <repo-url>
-cd polarops-command-center
+cd PolarOps
 docker-compose up --build
 ```
 
-- Frontend: `http://localhost:5173`
+- Frontend: `http://localhost:3000`
 - Backend API docs: `http://localhost:8000/docs`
 - PostgreSQL: `localhost:5432`
 
-The database is seeded automatically on first run with realistic synthetic data (~50–80 personnel, ~40–60 cargo records, ~30–40 assets).
+The database is seeded automatically with realistic synthetic data: 68 personnel, 48 cargo records, 28 inventory items, 36 assets, across 4 expeditions.
 
 ### Demo accounts
 
-| Role | Email |
-|---|---|
-| Admin | `admin@polarops.gov.in` |
-| Expedition Manager | *(see seed data)* |
-| Field Officer | `officer@polarops.gov.in` |
-| Emergency Coordinator | *(see seed data)* |
+| Role | Name | Email |
+|---|---|---|
+| Admin | Dr. Sunita Sharma | `admin@polarops.gov.in` |
+| Expedition Manager | Rajesh Rao | `manager@polarops.gov.in` |
+| Field Officer | Vikramaditya Singh | `officer@polarops.gov.in` |
+| Emergency Coordinator | Dr. Ananya Sen | `emergency@polarops.gov.in` |
 
 Demo password: `polarops2026`
+
+> **Note on the Emergency screen:** the seed data includes one pre-existing active incident (a "Missing Personnel" case at Field Camp B). Before presenting, log in as Admin or Emergency Coordinator and click **Mark as Resolved** on that incident so the demo starts from the clean "No Active Emergency Incidents" state.
 
 ---
 
@@ -125,3 +128,10 @@ See `backend/app/services/` for the automation logic (`alert_service.py`, `predi
 All data in this prototype — personnel names, expedition details, cargo, inventory levels, and coordinates — is **synthetic**, generated to realistically demonstrate the system. It is not real NCPOR operational data.
 
 ---
+
+## License
+
+Team Cypher 404,
+Guru Nanak Institute of Technology, Sodepur, West Bengal.
+
+

@@ -2,12 +2,15 @@ import React from 'react';
 import { History, ShieldAlert, MapPin, Calendar, User } from 'lucide-react';
 
 const RecentIncidentsList = ({ incidents, onSelectIncident, currentIncidentId }) => {
-  if (!incidents || incidents.length <= 1) return null;
+  if (!incidents || incidents.length === 0) return null;
 
   // Filter out current active incident if shown at top
-  const pastIncidents = incidents.filter((inc) => inc.incident_id !== currentIncidentId);
+  const pastIncidents = currentIncidentId
+    ? incidents.filter((inc) => inc.incident_id !== currentIncidentId)
+    : incidents;
 
   if (pastIncidents.length === 0) return null;
+
 
   const renderSeverityBadge = (severity) => {
     const s = (severity || '').toUpperCase();

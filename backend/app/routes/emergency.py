@@ -78,3 +78,32 @@ def get_emergency_incidents(
     incidents = query.order_by(EmergencyIncident.incident_id.desc()).all()
 
     return [build_emergency_response(inc) for inc in incidents]
+
+
+@router.patch("/{incident_id}", response_model=EmergencyResponse)
+def resolve_emergency_incident(
+    incident_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "EMERGENCY_COORDINATOR"], "Only Emergency Coordinators and Admins can resolve an emergency."))
+):
+    """
+    Updates an Emergency Incident's status to 'Resolved' in PostgreSQL.
+    """
+    incident = db.query(EmergencyIncident).filter(EmergencyIncident.incident_id == incident_id).first()
+    if not incident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Emergency incident #{incident_id} not found."
+        )
+
+    incident.status = "Resolved"
+    if hasattr(current_user, "name") and current_user.name:
+        incident.resolution = f"Resolved by {current_user.name}"
+    else:
+        incident.resolution = "Resolved"
+
+    db.commit()
+    db.refresh(incident)
+
+    return build_emergency_response(incident)
+

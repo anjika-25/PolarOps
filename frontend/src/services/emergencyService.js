@@ -21,5 +21,11 @@ export const emergencyService = {
 
     const response = await api.post('/emergency', payload);
     return response.data;
+  },
+
+  resolveIncident: async (incidentId) => {
+    const response = await api.patch(`/emergency/${incidentId}`);
+    return response.data;
   }
 };
+

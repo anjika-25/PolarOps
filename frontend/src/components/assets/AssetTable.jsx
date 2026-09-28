@@ -55,7 +55,7 @@ const AssetTable = ({ assets, onRowClick, selectedAssetId }) => {
   return (
     <div className="bg-white rounded-lg border border-polar-border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="w-full min-w-[650px] text-left border-collapse text-xs">
           {/* Exact required columns */}
           <thead>
             <tr className="bg-[#0B1F33] text-white font-bold uppercase tracking-wider text-[11px]">

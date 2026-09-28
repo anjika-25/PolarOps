@@ -100,18 +100,18 @@ const Logistics = () => {
     }
   };
 
-  // Fetch Dashboard Alerts & Stats for real-time sync
+  // Fetch Dashboard Alerts for real-time sync
   const fetchDashboardAlerts = async () => {
     try {
       const alerts = await dashboardService.getAlerts();
       setDashboardAlerts(alerts);
-      await dashboardService.getStats();
     } catch (err) {
       console.error("Failed to fetch dashboard alerts for logistics:", err);
     }
   };
 
-  // Initial mount fetch to ensure count initializes cleanly without temporary 0
+
+  // Initial mount fetch to ensure inventory tab count initializes immediately with real data
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -121,6 +121,7 @@ const Logistics = () => {
       fetchCargo();
     }
   }, [cargoFilters, activeTab]);
+
 
   useEffect(() => {
     if (activeTab === 'inventory') {

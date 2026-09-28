@@ -41,7 +41,7 @@ const RecentAlerts = ({ alerts = [] }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-polar-border shadow-sm flex flex-col h-[480px] overflow-hidden">
+    <div className="bg-white rounded-lg border border-polar-border shadow-sm flex flex-col h-[780px] overflow-hidden">
       <div className="px-5 py-4 border-b border-polar-border flex items-center justify-between bg-slate-50/50 shrink-0">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600" />

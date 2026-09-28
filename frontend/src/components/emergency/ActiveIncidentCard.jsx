@@ -11,7 +11,7 @@ import {
   Calendar
 } from 'lucide-react';
 
-const ActiveIncidentCard = ({ incident }) => {
+const ActiveIncidentCard = ({ incident, onResolve, resolving, canResolve }) => {
   if (!incident) return null;
 
   const renderSeverityBadge = (severity) => {
@@ -76,11 +76,26 @@ const ActiveIncidentCard = ({ incident }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-rose-200 shrink-0 font-mono">
-          <Calendar className="w-3.5 h-3.5 text-rose-400" />
-          <span>{formattedDate}</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-xs text-rose-200 font-mono">
+            <Calendar className="w-3.5 h-3.5 text-rose-400" />
+            <span>{formattedDate}</span>
+          </div>
+
+          {(incident.status || '').toUpperCase() === 'ACTIVE' && canResolve && (
+            <button
+              onClick={() => onResolve && onResolve(incident.incident_id)}
+              disabled={resolving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              title="Mark incident as resolved in system"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{resolving ? 'Resolving...' : 'Mark as Resolved'}</span>
+            </button>
+          )}
         </div>
       </div>
+
 
       {/* Incident Core Info Grid */}
       <div className="p-5 border-b border-polar-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">

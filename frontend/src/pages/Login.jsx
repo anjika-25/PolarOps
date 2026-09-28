@@ -161,7 +161,7 @@ const Login = () => {
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" /> Secure Command Center Access
+                  Secure Command Center Access
                 </span>
               )}
             </button>

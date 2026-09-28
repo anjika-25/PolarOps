@@ -127,7 +127,7 @@ const CargoTable = ({ cargo = [], filters, onFilterChange, onResetFilters, loadi
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[650px] text-left text-xs">
               <thead className="bg-slate-50 text-polar-textMuted font-semibold border-b border-polar-border uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Cargo ID</th>

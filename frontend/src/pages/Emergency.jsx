@@ -20,6 +20,9 @@ const Emergency = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  // Resolve state
+  const [resolving, setResolving] = useState(false);
+
   // Toast banner for feedback
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -31,9 +34,9 @@ const Emergency = () => {
       setIncidents(data);
 
       if (data && data.length > 0) {
-        // Find active incident or default to the most recent one
-        const active = data.find((i) => (i.status || '').toUpperCase() === 'ACTIVE') || data[0];
-        setActiveIncident(active);
+        // Find active incident if any exists
+        const active = data.find((i) => (i.status || '').toUpperCase() === 'ACTIVE');
+        setActiveIncident(active || null);
       } else {
         setActiveIncident(null);
       }
@@ -85,10 +88,28 @@ const Emergency = () => {
     }
   };
 
+  const handleResolveIncident = async (incidentId) => {
+    setResolving(true);
+    try {
+      await emergencyService.resolveIncident(incidentId);
+      setToastMessage(`Emergency Incident #${incidentId} successfully marked as resolved.`);
+      setTimeout(() => setToastMessage(null), 6000);
+      await fetchIncidents();
+    } catch (err) {
+      console.error("Resolve Emergency API Error:", err);
+      const msg = err.response?.data?.detail || err.message || "Failed to resolve emergency incident.";
+      setToastMessage(`Error: ${msg}`);
+      setTimeout(() => setToastMessage(null), 6000);
+    } finally {
+      setResolving(false);
+    }
+  };
+
   const handleSelectIncidentFromList = (incident) => {
     setActiveIncident(incident);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
 
   return (
     <div className="space-y-6 pb-6 relative">
@@ -172,49 +193,57 @@ const Emergency = () => {
             </div>
           </div>
         </div>
-      ) : !activeIncident ? (
-        /* Section 1: Institutional Empty State (No Active Emergencies) */
-        <div className="bg-white rounded-lg border border-polar-border p-12 shadow-sm text-center">
-          <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-4">
-            <div className="p-4 bg-emerald-50 rounded-full border border-emerald-200">
-              <ShieldAlert className="w-10 h-10 text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-polar-text">
-                No Active Emergency Incidents
-              </h2>
-              <p className="text-xs text-polar-textMuted mt-1.5 leading-relaxed">
-                There are currently no active emergency incidents reported across Maitri, Bharati, Himadri, or active field camps. All stations are operating under normal conditions.
-              </p>
-            </div>
-            {canDeclareEmergency ? (
-              <button
-                onClick={handleOpenModal}
-                className="mt-2 inline-flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded bg-rose-700 hover:bg-rose-800 text-white shadow-sm transition-colors"
-              >
-                <AlertTriangle className="w-4 h-4" />
-                <span>Declare Emergency</span>
-              </button>
-            ) : (
-              <div className="mt-2 text-xs text-amber-800 font-semibold px-4 py-2 bg-amber-50 border border-amber-200 rounded text-center">
-                Only Emergency Coordinators and Admins can declare an emergency.
-              </div>
-            )}
-          </div>
-        </div>
       ) : (
-        /* Section 2: Active Emergency Display */
         <div className="space-y-6">
-          <ActiveIncidentCard incident={activeIncident} />
+          {!activeIncident ? (
+            /* Section 1: Institutional Empty State (No Active Emergencies) */
+            <div className="bg-white rounded-lg border border-polar-border p-12 shadow-sm text-center">
+              <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-4">
+                <div className="p-4 bg-emerald-50 rounded-full border border-emerald-200">
+                  <ShieldAlert className="w-10 h-10 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-polar-text">
+                    No Active Emergency Incidents
+                  </h2>
+                  <p className="text-xs text-polar-textMuted mt-1.5 leading-relaxed">
+                    There are currently no active emergency incidents reported across Maitri, Bharati, Himadri, or active field camps. All stations are operating under normal conditions.
+                  </p>
+                </div>
+                {canDeclareEmergency ? (
+                  <button
+                    onClick={handleOpenModal}
+                    className="mt-2 inline-flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded bg-rose-700 hover:bg-rose-800 text-white shadow-sm transition-colors"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Declare Emergency</span>
+                  </button>
+                ) : (
+                  <div className="mt-2 text-xs text-amber-800 font-semibold px-4 py-2 bg-amber-50 border border-amber-200 rounded text-center">
+                    Only Emergency Coordinators and Admins can declare an emergency.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Section 2: Active Emergency Display */
+            <ActiveIncidentCard
+              incident={activeIncident}
+              onResolve={handleResolveIncident}
+              resolving={resolving}
+              canResolve={canDeclareEmergency}
+            />
+          )}
 
           {/* Section 3: Recent Incidents Log List */}
           <RecentIncidentsList
             incidents={incidents}
             onSelectIncident={handleSelectIncidentFromList}
-            currentIncidentId={activeIncident.incident_id}
+            currentIncidentId={activeIncident?.incident_id}
           />
         </div>
       )}
+
 
       {/* Declare Emergency Form Modal */}
       <DeclareEmergencyModal
